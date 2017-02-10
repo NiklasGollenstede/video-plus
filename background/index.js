@@ -28,6 +28,6 @@ async function onClick() { try {
 
 (await content.applyNow());
 
-Object.assign(global, { onClick, reportError, }); // for debugging
+Object.assign(global, { options, reportError, onClick, }); // for debugging
 
 }); })(this);

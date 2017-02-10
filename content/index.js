@@ -1,10 +1,12 @@
 (function(global) { 'use strict'; define(async ({ // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 	'node_modules/es6lib/dom': { createElement, },
-	'node_modules/es6lib/observer': { CreationObserver, RemoveObserver, },
+	'node_modules/es6lib/observer': { InsertObserver, RemoveObserver, },
 	'node_modules/es6lib/functional': { throttle, },
 	'node_modules/web-ext-utils/loader/content': { onUnload, },
-	// 'common/options': optionsRoot,
+	'common/options': optionsRoot,
 }) => {
+onUnload.addListener(() => optionsRoot.destroy());
+const options = optionsRoot.children;
 
 // test urls:
 // Varying height:   https://www.youtube.com/watch?v=sAsAVUqnvrY
@@ -13,20 +15,17 @@
 // Ultra wide:       https://www.youtube.com/watch?v=BFR8VIwgPSY
 // changing edges:   https://www.youtube.com/watch?v=BxcjZdAxI_U&t=140
 // changing edges:   https://www.youtube.com/watch?v=3kDpXyuucGE
+// white edges:      https://www.youtube.com/watch?v=u_KK8KFqwkE
 // Vimeo:            https://vimeo.com/174593392
 // ...
 
-const styleFix = (document.head || document.documentElement).appendChild(createElement('style', null, [ {
-	'vimeo.com': `
-		.player_container { width: 100% !important; }
-	`,
-	'www.youtube.com': `
-		.watch-stage-mode #player-api { width: 100%; left: 0; margin-left: 0; }
-	`,
-}[location.host], ]));
+const styleFix = (document.head || document.documentElement).appendChild(createElement('style'));
+options.css.whenChange((_, { current, }) => {
+	styleFix.textContent = current[current.findIndex(([ host, ]) => host === location.host)][1];
+});
 onUnload.addListener(() => styleFix.remove());
 
-const observer = new CreationObserver(document);
+const observer = new InsertObserver(document);
 onUnload.addListener(() => observer.removeAll());
 
 const videos = new Map;

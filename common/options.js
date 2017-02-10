@@ -1,9 +1,8 @@
 (function(global) { 'use strict'; define(async ({ // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-	'node_modules/web-ext-utils/browser/': { Storage, },
 	'node_modules/web-ext-utils/options/': Options,
 }) => {
 
-const model = {
+return new Options({ model: {
 	include: {
 		title: 'Included Sites',
 		description: String.raw`<pre>
@@ -17,7 +16,6 @@ Examples:</pre><ul>
 </ul>`,
 		maxLength: Infinity,
 		default: [ 'https://*.youtube.com/*', ],
-		addDefault: 'https://*.youtube.com/*',
 		restrict: {
 			match: {
 				exp: (/^[\/\^]|^(?:(\*|http|https|file|ftp|app):\/\/(\*|(?:\*\.)?[^\/\*]+|)\/(.*))$/i),
@@ -25,31 +23,24 @@ Examples:</pre><ul>
 			},
 			unique: '.',
 		},
-		type: 'string',
+		input: { type: 'string', default: 'https://*.youtube.com/*', },
 	},
-
-};
-
-const listerners = new WeakMap;
-
-const options = (await new Options({
-	model,
-	prefix: 'options',
-	storage: Storage.sync,
-	addChangeListener(listener) {
-		const onChanged = changes => Object.keys(changes).forEach(key => key.startsWith('options') && listener(key, changes[key].newValue));
-		listerners.set(listener, onChanged);
-		Storage.onChanged.addListener(onChanged);
+	css: {
+		title: `Style Fixes`,
+		maxLength: Infinity,
+		default: [
+			[ 'vimeo.com', `.player_container { width: 100% !important; }`, ],
+			[ 'www.youtube.com', `.watch-stage-mode #player-api { width: 100%; left: 0; margin-left: 0; }`, ],
+		],
+		restrict: [
+			{ match: { exp: (/^[\w-]+(?:\.[\w-]+)+$/), message: `this must be a valid host name`, }, },
+			{ },
+		],
+		input: [
+			{ type: 'string', prefix: 'Host:', default: 'www.example.com', style: { display: 'block', marginBottom: '3px', }, },
+			{ type: 'text',   prefix: 'CSS: ', default: '.player_container { width: 100% !important; }', },
+		],
 	},
-	removeChangeListener(listener) {
-		const onChanged = listerners.get(listener);
-		listerners.delete(listener);
-		Storage.onChanged.removeListener(onChanged);
-	},
-}));
-
-options.model = Object.freeze(model);
-
-return options;
+}, });
 
 }); })(this);
