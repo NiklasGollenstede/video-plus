@@ -1,0 +1,8 @@
+*.xpi
+*.zip
+node_modules
+npm-debug.log
+/build/
+/update/*/versions.json
+files.json
+manifest.json
