@@ -2,27 +2,29 @@
 	'node_modules/web-ext-utils/options/': Options,
 }) => {
 
-return new Options({ model: {
+const isBeta = (/^\d+\.\d+.\d+(?!$)/).test((global.browser || global.chrome).runtime.getManifest().version); // version doesn't end after the 3rd number ==> bata channel
+
+const model = {
 	include: {
 		title: 'Included Sites',
-		description: String.raw`<pre>
-A list of sites on which this extension should work by default, without clicking it's icon.
-Specify as <a href="https://developer.mozilla.org/Add-ons/WebExtensions/Match_patterns">Match Patterns</a> or Regular Expressions (advanced).
-Examples:</pre><ul>
-<li><code>https://*.youtube.com/*</code>: Matches all YouTube pages</li>
-<li><code>https://www.whatever.web/sites.html</code>: Matches exactly that site</li>
-<li><code>^https?://(?:www\.)?google\.(?:com|co\.uk|de|fr|com\.au)/.*</code>: Starting with <code>^</code>, this is a Regular Expression. Only use it if you understand it.</li>
-<li><code>/.</code>: Starting with <code>/</code>, this is a Regular Expressions too. This one matches everything, so really only use it if you understand what you are doing!</li>
-</ul>`,
+		description: String.raw`
+			A list of sites on which this extension should work by default, without clicking it's icon.<br>
+			Specify as <a href="https://developer.mozilla.org/Add-ons/WebExtensions/Match_patterns">Match Patterns</a>
+			or <a href="https://regex101.com/">Regular Expressions</a> (advanced, must start with <code>^</code> and end with <code>$</code>).<br>
+			Examples:<ul>
+				<li><code>https://*.youtube.com/*</code>: Matches all YouTube pages</li>
+				<li><code>https://www.whatever.web/sites.html</code>: Matches exactly that site</li>
+				<li><code>&lt;all_urls&gt;</code>: Matches every URL</li>
+				<li><code>^https?://(?:www\.)?google\.(?:com|co\.uk|de|fr|com\.au)/.*$</code>: Starting with <code>^</code> and ending with <code>$</code>, this is a Regular Expression.</li>
+				<li><code>^.*$</code>: This is a Regular Expressions too. This one matches everything, so really only use it if you understand what you are doing!</li>
+			</ul>
+		`,
 		maxLength: Infinity,
 		default: [ 'https://*.youtube.com/*', ],
-		restrict: {
-			match: {
-				exp: (/^[\/\^]|^(?:(\*|http|https|file|ftp|app):\/\/(\*|(?:\*\.)?[^\/\*]+|)\/(.*))$/i),
-				message: `Each pattern must be of the form <scheme>://<host>/<path> or start with '^' or '/'`,
-			},
-			unique: '.',
-		},
+		restrict: { unique: '.', match: {
+			exp: (/^(?:\^.*\$|<all_urls>|(?:(\*|http|https|file|ftp|app):\/\/(\*|(?:\*\.)?[^\/\*\ ]+|)\/([^\ ]*)))$/i),
+			message: `Each pattern must be of the form <scheme>://<host>/<path> or be framed with '^' and '$'`,
+		}, },
 		input: { type: 'string', default: 'https://*.youtube.com/*', },
 	},
 	css: {
@@ -41,6 +43,27 @@ Examples:</pre><ul>
 			{ type: 'text',   prefix: 'CSS: ', default: '.player_container { width: 100% !important; }', },
 		],
 	},
-}, });
+	transitionDuration: {
+		title: 'transitionDuration',
+		default: 5000,
+		restrict: { type: 'number', from: 0, to: 10000, },
+		input: { type: 'integer', suffix: 'ms', },
+	},
+	debug: {
+		title: 'Debug Level',
+		expanded: false,
+		default: +isBeta,
+		hidden: !isBeta,
+		restrict: { type: 'number', from: 0, to: 2, },
+		input: { type: 'integer', suffix: 'set to > 0 to enable debugging', },
+	},
+};
+
+const options = (await new Options({ model, }));
+try {
+	require('node_modules/web-ext-utils/loader/content')
+	.onUnload.addListener(() => options.destroy());
+} catch (_) { /* not in content */ }
+return options.children;
 
 }); })(this);

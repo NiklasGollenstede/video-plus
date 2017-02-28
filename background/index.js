@@ -7,15 +7,15 @@
 	'common/options': options,
 }) => {
 
-updated.extension.to.channel !== '' && console.info('Ran updates', updated);
+options.debug.value && console.info('Ran updates', updated);
 
 const content = new ContentScript({
 	runAt: 'document_end',
 	modules: [ 'content/index', ],
 });
 
-options.children.include.whenChange((_, { current, }) => {
-	try { content.include = current; } catch (error) { reportError(`Invalid value`, error); throw error; }
+options.include.whenChange((_, { current, }) => {
+	try { content.include = current; } catch (error) { reportError(`Invalid URL pattern`, error); throw error; }
 });
 
 browserAction && browserAction.onClicked.addListener(onClick);
@@ -28,6 +28,11 @@ async function onClick() { try {
 
 (await content.applyNow());
 
-Object.assign(global, { options, reportError, onClick, }); // for debugging
+Object.assign(global, { // for debugging
+	options, onClick,
+	Browser: arguments[0]['node_modules/web-ext-utils/browser/'],
+	Loader:  arguments[0]['node_modules/web-ext-utils/loader/'],
+	Utils:   arguments[0]['node_modules/web-ext-utils/utils/'],
+});
 
 }); })(this);
