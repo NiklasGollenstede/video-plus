@@ -4,6 +4,17 @@
 
 const isBeta = (/^\d+\.\d+.\d+(?!$)/).test((global.browser || global.chrome).runtime.getManifest().version); // version doesn't end after the 3rd number ==> bata channel
 
+const videoBG = `video { background-image:
+	repeating-linear-gradient(-45deg,
+		rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 2px,
+		transparent 2px, transparent 4px
+	),
+	repeating-linear-gradient(+45deg,
+		rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 2px,
+		transparent 2px, transparent 4px
+	)
+; }`;
+
 const model = {
 	include: {
 		title: 'Included Sites',
@@ -31,8 +42,13 @@ const model = {
 		title: `Style Fixes`,
 		maxLength: Infinity,
 		default: [
-			[ 'vimeo.com', `.player_container { width: 100% !important; }`, ],
-			[ 'www.youtube.com', `.watch-stage-mode #player-api { width: 100%; left: 0; margin-left: 0; }`, ],
+			[ 'vimeo.com', `.player_container { width: 100% !important; }\n\n`+ videoBG, ],
+			[ 'www.youtube.com', [
+				`.watch-stage-mode #player-api { width: 100% !important; left: 0 !important; margin-left: 0 !important; }`,
+				`.html5-video-container { height: 100% !important; }`,
+				`.html5-main-video { width: 100% !important; height: 100% !important; top: 0 !important; left: 0 !important; }`,
+				'', videoBG,
+			].join('\n'), ],
 		],
 		restrict: [
 			{ match: { exp: (/^[\w-]+(?:\.[\w-]+)+$/), message: `this must be a valid host name`, }, },
@@ -59,11 +75,6 @@ const model = {
 	},
 };
 
-const options = (await new Options({ model, }));
-try {
-	require('node_modules/web-ext-utils/loader/content')
-	.onUnload.addListener(() => options.destroy());
-} catch (_) { /* not in content */ }
-return options.children;
+return (await new Options({ model, })).children;
 
 }); })(this);

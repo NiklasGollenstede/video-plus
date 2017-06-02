@@ -9,7 +9,9 @@
 // Ultra wide:       https://www.youtube.com/watch?v=BFR8VIwgPSY
 // changing edges:   https://www.youtube.com/watch?v=dN-r4B6oezc=140
 // changing edges:   https://www.youtube.com/watch?v=3kDpXyuucGE
+// changing edges:   https://www.youtube.com/watch?v=e2vBLd5Egnk
 // white edges:      https://www.youtube.com/watch?v=u_KK8KFqwkE
+// 16:9 on 4:3:      https://www.youtube.com/watch?v=IG7WSnovCAI
 // Vimeo:            https://vimeo.com/194906601
 // 1px frame:        https://vimeo.com/194906601
 // ...
@@ -159,8 +161,8 @@ function calcZoom(video, container) {
 
 	const z = Math.min(
 		Math.max(scaleX, scaleY),
-		container.width  / displayW,
-		container.height / displayH
+		container.width  / displayW || 1,
+		container.height / displayH || 1
 	);
 
 	// relative

@@ -1,11 +1,10 @@
 (function(global) { 'use strict'; define(async ({ // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-	'node_modules/es6lib/dom': { createElement, },
 	'node_modules/es6lib/observer': { InsertObserver, RemoveObserver, },
 	'node_modules/es6lib/functional': { throttle, },
 	'node_modules/web-ext-utils/loader/content': { onUnload, },
 	'common/options': options,
 	'./zoom': { getPadding, calcZoom, },
-}) => {
+}) => { /* globals window, document, location, setTimeout, clearTimeout, */
 /* eslint-disable no-console */
 
 // test urls:
@@ -15,6 +14,7 @@
 // Ultra wide:       https://www.youtube.com/watch?v=BFR8VIwgPSY
 // changing edges:   https://www.youtube.com/watch?v=dN-r4B6oezc&t=140
 // changing edges:   https://www.youtube.com/watch?v=3kDpXyuucGE
+// alternating edges:https://www.youtube.com/watch?v=fEOyePhElr4
 // white edges:      https://www.youtube.com/watch?v=u_KK8KFqwkE
 // Vimeo:            https://vimeo.com/194906601
 // 1px frame:        https://vimeo.com/194906601
@@ -23,9 +23,10 @@
 let debug; options.debug.whenChange(value => (debug = value));
 let transitionDuration; options.transitionDuration.whenChange(value => (transitionDuration = value));
 
-const styleFix = (document.head || document.documentElement).appendChild(createElement('style'));
-options.css.whenChange((_, { current, }) => {
-	styleFix.textContent = current[current.findIndex(([ host, ]) => host === location.host)][1];
+const styleFix = (document.head || document.documentElement).appendChild(document.createElement('style'));
+options.css.whenChange(values => {
+	const at = values.findIndex(([ host, ]) => host === location.host);
+	styleFix.textContent = at < 0 ? '' : values[at][1];
 });
 onUnload.addListener(() => styleFix.remove());
 
@@ -38,11 +39,6 @@ const defaultStyle = {
 	transitionDuration: transitionDuration / 1000 +'s',
 	transitionProperty: 'transform, transform-origin',
 	transitionTimingFunction: 'cubic-bezier(1.0, 0.0, 0.7, 0.7)',
-	backgroundColor: '#000',
-	backgroundImage: `
-		repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 2px, transparent 2px, transparent 4px),
-		repeating-linear-gradient(+45deg, rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 2px, transparent 2px, transparent 4px)
-	`,
 };
 
 const videos = new Set;
@@ -51,7 +47,7 @@ onUnload.addListener(() => videos.forEach(_=>_.destroy()));
 class Video {
 	constructor(player) {
 		this.player = player;
-		const sheet = this.sheet = player.appendChild(createElement('style', { scoped: true, }));
+		const sheet = this.sheet = player.appendChild(document.createElement('style')); sheet.scoped = true;
 		sheet.textContent = (sheet.hasAttribute('scoped') ? 'video:scope' : (
 			'video[data-video-tools-id="'+ (player.dataset.videoToolsId = Math.random().toString(32).slice(2)) +'"]'
 		)) +' { }';
@@ -146,7 +142,7 @@ class Video {
 }
 
 const resizeListener = {
-	events: [ 'click', 'resize', 'wheel', ],
+	events: [ 'click', 'resize', 'wheel', 'webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', ],
 	attach() { this.events.forEach(type => window.addEventListener(type, this)); console.log('resizeListener attach'); },
 	detach() { this.events.forEach(type => window.removeEventListener(type, this)); console.log('resizeListener detach'); },
 	handleEvent: throttle(() => videos.forEach(video => {

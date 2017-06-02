@@ -8,23 +8,11 @@ module.exports = function({ /*options, packageJson,*/ manifestJson, files, }) {
 		'<all_urls>'
 	);
 
-	manifestJson.browser_action = {
-		default_icon: manifestJson.icons,
-		default_title: 'Apply to the current page',
-	};
-
 	files.node_modules = {
 		es6lib: [
-			'concurrent.js',
-			'dom.js',
 			'functional.js',
-			'index.js',
-			'network.js',
-			'object.js',
 			'observer.js',
-			'port.js',
 			'require.js',
-			'string.js',
 		],
 		'web-ext-utils': {
 			'.': [
@@ -39,7 +27,6 @@ module.exports = function({ /*options, packageJson,*/ manifestJson, files, }) {
 					'index.js',
 					'index.css',
 					'inline.css',
-					'inline.html',
 					'inline.js',
 				],
 			},
@@ -47,9 +34,9 @@ module.exports = function({ /*options, packageJson,*/ manifestJson, files, }) {
 				'index.js',
 			],
 			utils: [
+				'event.js',
 				'files.js',
 				'index.js',
-				'inject.js',
 				'semver.js',
 			],
 		},
