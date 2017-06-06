@@ -1,6 +1,6 @@
 (function(global) { 'use strict'; define(async ({ // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 	'node_modules/web-ext-utils/browser/': { browserAction, Tabs, manifest, },
-	'node_modules/web-ext-utils/loader/': { ContentScript, getFrame, detachFormTab, },
+	'node_modules/web-ext-utils/loader/': { ContentScript, detachFormTab, },
 	'node_modules/web-ext-utils/update/': updated,
 	'node_modules/web-ext-utils/utils/': { reportError, },
 	'common/options': options,
@@ -16,7 +16,6 @@ const content = new ContentScript({
 	runAt: 'document_end',
 	modules: [ 'content/index', ],
 });
-const active = content.active = new WeakSet;
 
 options.include.whenChange(values => {
 	try { content.include = values; } catch (error) { reportError(`Invalid URL pattern`, error); throw error; }
@@ -26,13 +25,13 @@ browserAction.onClicked.addListener(onClick);
 async function onClick() { try {
 
 	const tab = (await Tabs.query({ currentWindow: true, active: true, }))[0];
-	if (active.has(getFrame(tab.id, 0))) {
+	if ((await content.appliedToFrame(tab.id, 0))) {
 		detachFormTab(tab.id, 0);
 	} else {
 		onShow(...(await content.applyToFrame(tab.id, 0)));
 	}
 
-} catch (error) { reportError(error); throw error; } }
+} catch (error) { reportError(error); } }
 
 browserAction.setBadgeBackgroundColor({ color: [ 0x00, 0x7f, 0x00, 0x60, ], });
 
@@ -40,13 +39,11 @@ content.onShow.addListener(onShow);
 content.onMatch.addListener(onShow);
 function onShow(frame, url, done) {
 	done.catch(reportError);
-	active.add(frame);
 	!frame.frameId && browserAction.setBadgeText({ tabId: frame.tabId, text: '✓', });
 	!frame.frameId && browserAction.setTitle({ tabId: frame.tabId, title: 'Disable '+ manifest.name, });
 }
 content.onHide.addListener(onHide);
 function onHide(frame) {
-	active.delete(frame);
 	!frame.frameId && browserAction.setBadgeText({ tabId: frame.tabId, text: '', }).catch(_=>_); // can't catch in chrome
 	!frame.frameId && browserAction.setTitle({ tabId: frame.tabId, title: 'Enable '+ manifest.name, }).catch(_=>_); // can't catch in chrome
 }

@@ -39,7 +39,7 @@ const model = {
 		input: { type: 'string', default: 'https://*.youtube.com/*', },
 	},
 	css: {
-		title: `Style Fixes`,
+		title: 'Style Fixes',
 		maxLength: Infinity,
 		default: [
 			[ 'vimeo.com', `.player_container { width: 100% !important; }\n\n`+ videoBG, ],
@@ -56,8 +56,15 @@ const model = {
 		],
 		input: [
 			{ type: 'string', prefix: 'Host:', default: 'www.example.com', style: { display: 'block', marginBottom: '3px', }, },
-			{ type: 'text',   prefix: 'CSS: ', default: '.player_container { width: 100% !important; }', },
+			{ type: 'text',   prefix: 'CSS: ', default: `.player_container { width: 100% !important; }\n\n`+ videoBG, },
 		],
+		children: {
+			default: {
+				title: 'Default',
+				default: `.player_container { width: 100% !important; }\n\n`+ videoBG,
+				input: { type: 'text',   prefix: 'CSS: ', },
+			},
+		},
 	},
 	transitionDuration: {
 		title: 'transitionDuration',

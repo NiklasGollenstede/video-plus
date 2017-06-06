@@ -20,13 +20,13 @@
 // 1px frame:        https://vimeo.com/194906601
 // ...
 
-let debug; options.debug.whenChange(value => (debug = value));
-let transitionDuration; options.transitionDuration.whenChange(value => (transitionDuration = value));
+let debug; options.debug.whenChange(([ value, ]) => (debug = value));
+let transitionDuration; options.transitionDuration.whenChange(([ value, ]) => (transitionDuration = value));
 
 const styleFix = (document.head || document.documentElement).appendChild(document.createElement('style'));
 options.css.whenChange(values => {
 	const at = values.findIndex(([ host, ]) => host === location.host);
-	styleFix.textContent = at < 0 ? '' : values[at][1];
+	styleFix.textContent = at < 0 ? options.css.children.default.value : values[at][1];
 });
 onUnload.addListener(() => styleFix.remove());
 
@@ -51,7 +51,7 @@ class Video {
 		sheet.textContent = (sheet.hasAttribute('scoped') ? 'video:scope' : (
 			'video[data-video-tools-id="'+ (player.dataset.videoToolsId = Math.random().toString(32).slice(2)) +'"]'
 		)) +' { }';
-		const style = this.style = sheet.sheet.cssRules[0].style;
+		const style = this.style = /*player.style; //*/ sheet.sheet.cssRules[0].style;
 		Object.keys(defaultStyle).forEach(key => style.setProperty(key.replace(/[A-Z]/g, c => '-'+ c.toLowerCase()), defaultStyle[key], 'important'));
 
 		this.size = { width: player.clientWidth, height: player.clientHeight, };
@@ -87,7 +87,7 @@ class Video {
 	checkPadding(recursive) {
 		// const start = performance.now();
 		if (this.player.paused) { debug && console.log('checkPadding stop loop', this); this.timeout = -1; return; }
-		if (!recursive && this.timeout !== -1) { console.log('checkPadding ignoring duplicate start', this); return; }
+		if (!recursive && this.timeout !== -1) { debug && console.log('checkPadding ignoring duplicate start', this); return; }
 		debug && !recursive && console.log('checkPadding start loop', this);
 		const wait = this.updateZoom(recursive);
 		debug && console.log('checkPadding loop wait', wait, recursive);
