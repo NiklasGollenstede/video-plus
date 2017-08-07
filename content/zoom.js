@@ -1,6 +1,4 @@
-(function(global) { 'use strict'; define(async ({ // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-	exports,
-}) => {
+(function(global) { 'use strict'; define(() => { // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // test urls:
 // Varying height:   https://www.youtube.com/watch?v=sAsAVUqnvrY
@@ -16,7 +14,7 @@
 // 1px frame:        https://vimeo.com/194906601
 // ...
 
-const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
+const canvas = global.document.createElement('canvas'), ctx = canvas.getContext('2d');
 const probes = [ 0.25, 0.5, 0.75, ]; // positions along each side at which to probe the padding
 const offset = 2; // pixel offset around the video to ignore
 const depth = 3 / 8; // relative maximum padding on each side
@@ -138,41 +136,44 @@ function getPadding(video, edges) {
 /**
  * @param  {object}   video      True video outer dimensions and padding in px: { width, height, top, left, bottom, right, }.
  * @param  {object}   container  Dimensions of the container.
- * @return {object?}             Relative translateX/Y and scale as { x, y, z, }.
+ * @return {object?}             Relative translateX/Y and scale as { x, y, z, } or null if any of the dimensions in `video` are NaN.
  */
 function calcZoom(video, container) {
 
-	// in data px
+	// The actual width and height of the video in pixels ...
 	const dataW = video.width  - video.left - video.right;
 	const dataH = video.height - video.top  - video.bottom;
 	if (isNaN(dataW) || isNaN(dataH)) { return null; }
 
-	// implicit scale factor
-	const defDpp  = Math.max(
-		video.width  / container.width,
-		video.height / container.height
+	// ... and the implicit scale factor automatically applied by the browser ...
+	const implScale  = Math.min(
+		container.width  / video.width,
+		container.height / video.height
 	);
-	// in px on display
-	const displayW = dataW / defDpp;
-	const displayH = dataH / defDpp;
+	// ... multiplied, results in this actual width and height of the video in CSS px.
+	const displayW = dataW * implScale;
+	const displayH = dataH * implScale;
 
+	// So to remove the padding, the video would need to be stretched by these factors.
 	const scaleX = video.width  / dataW;
 	const scaleY = video.height / dataH;
 
+	// But we don't want to stretch, we want to scare both dimensions evenly.
 	const z = Math.min(
-		Math.max(scaleX, scaleY),
-		container.width  / displayW || 1,
-		container.height / displayH || 1
+		Math.max(scaleX, scaleY), // So we use the maximum,
+		container.width  / displayW || 1, // but cap it so that no actual data is cropped off left/right
+		container.height / displayH || 1, // or at the top/bottom.
 	);
 
-	// relative
-	const x = - (video.left - video.right) / video.width / 2;
-	const y = - (video.top - video.bottom) / video.height / 2;
+	// To deal with edges that are not the same on opposite sites,
+	// we calculate how much more the video needs to be pushed to the right/bottom (before scaling with z)
+	// divide that by 2 annd multiply it by the scale factor in that direction.
+	const x = (video.right - video.left) / video.width  / 2 * scaleX;
+	const y = (video.bottom - video.top) / video.height / 2 * scaleY;
 
-	// in px
-	// const x = - (video.left - video.right) / 2 * defDpp;
-	// const y = - (video.top - video.bottom) / 2 * defDpp;
-
+	// If the video is now first shifted by x/y parts and then scaled up by the factor z,
+	// it is centered around its visual center
+	// and scaled up exactly as much as possible without loosing anything that is not padding.
 	return { x, y, z, };
 }
 

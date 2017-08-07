@@ -4,17 +4,6 @@
 
 const isBeta = (/^\d+\.\d+.\d+(?!$)/).test((global.browser || global.chrome).runtime.getManifest().version); // version doesn't end after the 3rd number ==> bata channel
 
-const videoBG = `video { background-image:
-	repeating-linear-gradient(-45deg,
-		rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 2px,
-		transparent 2px, transparent 4px
-	),
-	repeating-linear-gradient(+45deg,
-		rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 2px,
-		transparent 2px, transparent 4px
-	)
-; }`;
-
 const model = {
 	include: {
 		title: 'Included Sites',
@@ -42,27 +31,32 @@ const model = {
 		title: 'Style Fixes',
 		maxLength: Infinity,
 		default: [
-			[ 'vimeo.com', `.player_container { width: 100% !important; }\n\n`+ videoBG, ],
+			[ 'vimeo.com', `.player_container { width: 100% !important; }`, ],
 			[ 'www.youtube.com', [
 				`.watch-stage-mode #player-api { width: 100% !important; left: 0 !important; margin-left: 0 !important; }`,
 				`.html5-video-container { height: 100% !important; }`,
 				`.html5-main-video { width: 100% !important; height: 100% !important; top: 0 !important; left: 0 !important; }`,
-				'', videoBG,
 			].join('\n'), ],
 		],
 		restrict: [
 			{ match: { exp: (/^[\w-]+(?:\.[\w-]+)+$/), message: `this must be a valid host name`, }, },
-			{ },
+			{ type: 'string', },
 		],
 		input: [
 			{ type: 'string', prefix: 'Host:', default: 'www.example.com', style: { display: 'block', marginBottom: '3px', }, },
-			{ type: 'text',   prefix: 'CSS: ', default: `.player_container { width: 100% !important; }\n\n`+ videoBG, },
+			{ type: 'text',   prefix: 'CSS: ', default: `.player_container { width: 100% !important; }`, },
 		],
 		children: {
 			default: {
 				title: 'Default',
-				default: `.player_container { width: 100% !important; }\n\n`+ videoBG,
-				input: { type: 'text',   prefix: 'CSS: ', },
+				default: ``,
+				restrict: { type: 'string', },
+				input: { type: 'text', prefix: 'CSS: ', },
+			},
+			background: {
+				default: false,
+				restrict: { type: 'boolean', },
+				input: { type: 'boolean', suffix: 'add mesh background', },
 			},
 		},
 	},

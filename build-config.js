@@ -3,21 +3,30 @@ module.exports = function({ /*options, packageJson,*/ manifestJson, files, }) {
 
 	manifestJson.permissions.push(
 		'notifications',
-		'tabs',
 		'webNavigation',
-		'<all_urls>'
+		'<all_urls>',
 	);
 
 	files.node_modules = {
 		es6lib: [
 			'functional.js',
 			'observer.js',
-			'require.js',
 		],
 		'web-ext-utils': {
-			'.': [
-				'browser/',
-				'loader/',
+			lib: [
+				'pbq/require.js',
+			],
+			browser: [
+				'index.js',
+				'version.js',
+			],
+			loader: [
+				'_background.html',
+				'_background.js',
+				'_view.js',
+				'content.js',
+				'index.js',
+				'views.js',
 			],
 			options: {
 				'.': [ 'index.js', ],

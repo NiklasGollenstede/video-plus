@@ -7,27 +7,28 @@
 }) => { /* globals window, document, location, setTimeout, clearTimeout, */
 /* eslint-disable no-console */
 
-// test urls:
-// Varying height:   https://www.youtube.com/watch?v=sAsAVUqnvrY
-// YouTube embedded: https://www.youtube.com/embed/mHWr4WY9o24
-// Very wide:        https://www.youtube.com/watch?v=GAvr5_EtOnI
-// Ultra wide:       https://www.youtube.com/watch?v=BFR8VIwgPSY
-// changing edges:   https://www.youtube.com/watch?v=dN-r4B6oezc&t=140
-// changing edges:   https://www.youtube.com/watch?v=3kDpXyuucGE
-// alternating edges:https://www.youtube.com/watch?v=fEOyePhElr4
-// white edges:      https://www.youtube.com/watch?v=u_KK8KFqwkE
-// Vimeo:            https://vimeo.com/194906601
-// 1px frame:        https://vimeo.com/194906601
-// ...
+const videoBG = `video { background-image:
+	repeating-linear-gradient(-45deg,
+		rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 2px,
+		transparent 2px, transparent 4px
+	),
+	repeating-linear-gradient(+45deg,
+		rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 2px,
+		transparent 2px, transparent 4px
+	)
+; }`;
 
 let debug; options.debug.whenChange(([ value, ]) => (debug = value));
 let transitionDuration; options.transitionDuration.whenChange(([ value, ]) => (transitionDuration = value));
 
 const styleFix = (document.head || document.documentElement).appendChild(document.createElement('style'));
-options.css.whenChange(values => {
+options.css.onAnyChange(updateCss); updateCss(); function updateCss() {
+	const values = options.css.values.current;
 	const at = values.findIndex(([ host, ]) => host === location.host);
-	styleFix.textContent = at < 0 ? options.css.children.default.value : values[at][1];
-});
+	styleFix.textContent
+	= (at < 0 ? options.css.children.default.value : values[at][1])
+	+ (options.css.children.background.value ? videoBG : '');
+}
 onUnload.addListener(() => styleFix.remove());
 
 const insertObserver = new InsertObserver(document);
@@ -76,7 +77,7 @@ class Video {
 	handleEvent(event) {
 		switch (event.type) {
 			case 'playing': {
-				this.checkPadding();
+				this.checkPadding(false);
 			} break;
 			case 'loadeddata': {
 				this.edges = { top: null, right: null, bottom: null, left: null, };
@@ -98,7 +99,7 @@ class Video {
 	}
 
 	updateZoom(smooth) {
-		const { size, style, player, edges, } = this;
+		const { size, player, edges, } = this;
 
 		const padding = getPadding(player, edges);
 		const pos = calcZoom(padding, size);
@@ -111,19 +112,22 @@ class Video {
 		const wait = change > 0.01 ? 300 : Math.min(Math.max(300, last * (1.5 - 50 * change)), 2500);
 
 		if (change > 0.005 || (last > 5000 && last > transitionDuration)) {
-			style.setProperty('transform', `
-				scale(${ pos.z.toFixed(6) })
-				translateX(${ pos.x.toFixed(6) * 100 * 0.25 }%)
-				translateY(${ pos.y.toFixed(6) * 100 * 0.25 }%)
-			`,	'important');
-			style.setProperty('transition-duration',
-				(smooth ? transitionDuration / 1000 : 0) +'s',
-			'important');
-
+			this.setZoom(pos, smooth);
 			debug && console.log('cropVideo', change, last > transitionDuration, padding, size, pos, wait);
 		}
 
 		return wait;
+	}
+
+	setZoom({ x, y, z, }, smooth) {
+		this.style.setProperty('transform', `
+			translateX(${ x.toFixed(6) * 100 }%)
+			translateY(${ y.toFixed(6) * 100 }%)
+			scale(${ z.toFixed(6) })
+		`,	'important');
+		this.style.setProperty('transition-duration',
+			(smooth ? transitionDuration / 1000 : 0) +'s',
+		'important');
 	}
 
 	destroy() {
