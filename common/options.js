@@ -1,5 +1,6 @@
 (function(global) { 'use strict'; define(async ({ // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 	'node_modules/web-ext-utils/options/': Options,
+	'node_modules/web-ext-utils/browser/storage': { sync: storage, },
 }) => {
 
 const isBeta = (/^\d+\.\d+.\d+(?!$)/).test((global.browser || global.chrome).runtime.getManifest().version); // version doesn't end after the 3rd number ==> bata channel
@@ -20,7 +21,7 @@ const model = {
 			</ul>
 		`,
 		maxLength: Infinity,
-		default: [ 'https://*.youtube.com/*', ],
+		default: [ 'https://*.youtube.com/*', 'https://*.vimeo.com/*', ],
 		restrict: { unique: '.', match: {
 			exp: (/^(?:\^.*\$|<all_urls>|(?:(\*|http|https|file|ftp|app):\/\/(\*|(?:\*\.)?[^\/\*\ ]+|)\/([^\ ]*)))$/i),
 			message: `Each pattern must be of the form <scheme>://<host>/<path> or be framed with '^' and '$'`,
@@ -31,11 +32,11 @@ const model = {
 		title: 'Style Fixes',
 		maxLength: Infinity,
 		default: [
-			[ 'vimeo.com', `.player_container { width: 100% !important; }`, ],
+			[ 'vimeo.com', `.player_outro_area,\n.player_container,\n.vp-player-layout {\n\twidth: 100% !important;\n\tleft: 0 !important;\n}`, ],
 			[ 'www.youtube.com', [
-				`.watch-stage-mode #player-api { width: 100% !important; left: 0 !important; margin-left: 0 !important; }`,
-				`.html5-video-container { height: 100% !important; }`,
-				`.html5-main-video { width: 100% !important; height: 100% !important; top: 0 !important; left: 0 !important; }`,
+				`.watch-stage-mode #player-api {\n\twidth: 100% !important;\n\tleft: 0 !important;\n\tmargin-left: 0 !important;\n}`,
+				`.html5-video-container {\n\theight: 100% !important;\n}`,
+				`.html5-main-video {\n\twidth: 100% !important;\n\theight: 100% !important;\n\ttop: 0 !important;\n\tleft: 0 !important;\n}`,
 			].join('\n'), ],
 		],
 		restrict: [
@@ -76,6 +77,6 @@ const model = {
 	},
 };
 
-return (await new Options({ model, })).children;
+return (await new Options({ model, storage, prefix: 'options', })).children;
 
 }); })(this);

@@ -4,8 +4,14 @@ module.exports = function({ /*options, packageJson,*/ manifestJson, files, }) {
 	manifestJson.permissions.push(
 		'notifications',
 		'webNavigation',
+		'tabs',
 		'<all_urls>',
 	);
+
+	manifestJson.browser_action = {
+		default_icon: manifestJson.icons,
+		default_title: `Toggle ${ manifestJson.name }`,
+	};
 
 	files.node_modules = {
 		es6lib: [
@@ -18,6 +24,7 @@ module.exports = function({ /*options, packageJson,*/ manifestJson, files, }) {
 			],
 			browser: [
 				'index.js',
+				'storage.js',
 				'version.js',
 			],
 			loader: [
@@ -43,6 +50,7 @@ module.exports = function({ /*options, packageJson,*/ manifestJson, files, }) {
 				'index.js',
 			],
 			utils: [
+				'icons/',
 				'event.js',
 				'files.js',
 				'index.js',

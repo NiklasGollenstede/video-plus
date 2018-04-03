@@ -10,8 +10,6 @@
 // changing edges:   https://www.youtube.com/watch?v=e2vBLd5Egnk
 // white edges:      https://www.youtube.com/watch?v=u_KK8KFqwkE
 // 16:9 on 4:3:      https://www.youtube.com/watch?v=IG7WSnovCAI
-// Vimeo:            https://vimeo.com/194906601
-// 1px frame:        https://vimeo.com/194906601
 // ...
 
 const canvas = global.document.createElement('canvas'), ctx = canvas.getContext('2d');
