@@ -1,6 +1,6 @@
 {
 	"name": "video-plus",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"title": "Video Plus",
 	"description": "Browser extension that increases the display size of videos by removing unnecessary padding bars",
 	"author": "Niklas Gollenstede",
@@ -11,18 +11,21 @@
 	},
 	"dependencies": {
 		"es6lib": "0.0.2",
-		"web-ext-build": "0.0.5",
-		"web-ext-utils": "0.0.18"
+		"multiport": "0.2.3",
+		"pbq": "0.3.3",
+		"web-ext-build": "0.0.9",
+		"web-ext-utils": "0.1.5"
 	},
 	"devDependencies": {
-		"babel-eslint": "7.1.1",
-		"eslint": "3.14.1",
-		"eslintrc": "NiklasGollenstede/eslintrc"
+		"babel-eslint": "8.2.2",
+		"eslint": "4.19.1",
+		"eslintrc": "NiklasGollenstede/eslintrc#c7cbce2"
 	},
 	"scripts": {
 		"postinstall": "npm start",
 		"start": "web-ext-build",
-		"lint": "eslint --ignore-path .gitignore ."
+		"lint": "eslint --ignore-path .gitignore .",
+		"sign": "web-ext-build {beta:$APPVEYOR_BUILD_NUMBER,sign:1}"
 	},
 	"eslintConfig": {
 		"extends": "./node_modules/eslintrc/web-ext.js"

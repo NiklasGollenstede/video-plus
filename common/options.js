@@ -23,7 +23,7 @@ const model = {
 		maxLength: Infinity,
 		default: [ 'https://*.youtube.com/*', 'https://*.vimeo.com/*', ],
 		restrict: { unique: '.', match: {
-			exp: (/^(?:\^.*\$|<all_urls>|(?:(\*|http|https|file|ftp|app):\/\/(\*|(?:\*\.)?[^\/\*\ ]+|)\/([^\ ]*)))$/i),
+			exp: (/^(?:\^.*\$|<all_urls>|(?:(\*|http|https|file|ftp|app):\/\/(\*|(?:\*\.)?[^/* ]+|)\/([^ ]*)))$/i),
 			message: `Each pattern must be of the form <scheme>://<host>/<path> or be framed with '^' and '$'`,
 		}, },
 		input: { type: 'string', default: 'https://*.youtube.com/*', },

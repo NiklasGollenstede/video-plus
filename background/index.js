@@ -1,22 +1,20 @@
 (function(global) { 'use strict'; define(async ({ // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 	'node_modules/web-ext-utils/browser/': { browserAction, Tabs, manifest, },
 	'node_modules/web-ext-utils/loader/': { ContentScript, unloadFrame, },
-	'node_modules/web-ext-utils/update/': updated,
-	'node_modules/web-ext-utils/utils/': { reportError, },
+	'node_modules/web-ext-utils/utils/notify': notify,
 	'common/options': options,
 	require,
 }) => {
 
 let debug; options.debug.whenChange(([ value, ]) => { debug = value; require('node_modules/web-ext-utils/loader/').debug = debug >= 2; });
-debug && console.info(manifest.name, 'loaded, updated', updated);
 
 const content = new ContentScript({
-	runAt: 'document_end',
+	runAt: 'document_end', // it acts delayed anyway
 	modules: [ 'content/index', ],
 });
 
 options.include.whenChange(values => {
-	try { content.include = values; } catch (error) { reportError(`Invalid URL pattern`, error); throw error; }
+	try { content.include = values; } catch (error) { notify.error(`Invalid URL pattern`, error); throw error; }
 });
 
 browserAction.onClicked.addListener(onClick);
@@ -29,12 +27,12 @@ async function onClick() { try {
 		onShow(...(await content.applyToFrame(tab.id, 0)));
 	}
 
-} catch (error) { reportError(error); } }
+} catch (error) { notify.error(error); } }
 
 browserAction.setBadgeBackgroundColor({ color: [ 0x00, 0x7f, 0x00, 0x60, ], });
 
 content.onMatch.addListener(onShow); function onShow(frame, url, done) {
-	done.catch(reportError);
+	done.catch(notify.error);
 	!frame.frameId && browserAction.setBadgeText({ tabId: frame.tabId, text: '✓', });
 	!frame.frameId && browserAction.setTitle({ tabId: frame.tabId, title: 'Disable '+ manifest.name, });
 }

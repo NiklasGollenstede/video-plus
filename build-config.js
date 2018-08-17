@@ -13,49 +13,32 @@ module.exports = function({ /*options, packageJson,*/ manifestJson, files, }) {
 		default_title: `Toggle ${ manifestJson.name }`,
 	};
 
-	files.node_modules = {
-		es6lib: [
-			'functional.js',
-			'observer.js',
-		],
-		'web-ext-utils': {
-			lib: [
-				'pbq/require.js',
-			],
-			browser: [
-				'index.js',
-				'storage.js',
-				'version.js',
-			],
-			loader: [
-				'_background.html',
-				'_background.js',
-				'_view.js',
-				'content.js',
-				'index.js',
-				'views.js',
-			],
-			options: {
-				'.': [ 'index.js', ],
-				editor: [
-					'about.js',
-					'about.css',
-					'index.js',
-					'index.css',
-					'inline.css',
-					'inline.js',
-				],
-			},
-			update: [
-				'index.js',
-			],
-			utils: [
-				'icons/',
-				'event.js',
-				'files.js',
-				'index.js',
-				'semver.js',
-			],
-		},
-	};
+	files.node_modules = [
+		'es6lib/functional.js',
+		'es6lib/observer.js',
+		'pbq/require.js',
+		'web-ext-utils/browser/index.js',
+		'web-ext-utils/browser/storage.js',
+		'web-ext-utils/browser/version.js',
+		'web-ext-utils/loader/_background.html',
+		'web-ext-utils/loader/_background.js',
+		'web-ext-utils/loader/_view.html',
+		'web-ext-utils/loader/_view.js',
+		'web-ext-utils/loader/content.js',
+		'web-ext-utils/loader/index.js',
+		'web-ext-utils/loader/views.js',
+		'web-ext-utils/options/editor/about.css',
+		'web-ext-utils/options/editor/about.js',
+		'web-ext-utils/options/editor/index.css',
+		'web-ext-utils/options/editor/index.js',
+		'web-ext-utils/options/editor/inline.js',
+		'web-ext-utils/options/editor/inline.css',
+		'web-ext-utils/options/index.js',
+		'web-ext-utils/utils/event.js',
+		'web-ext-utils/utils/files.js',
+		'web-ext-utils/utils/index.js',
+		'web-ext-utils/utils/notify.js',
+		'web-ext-utils/utils/icons/',
+	];
+
 };
