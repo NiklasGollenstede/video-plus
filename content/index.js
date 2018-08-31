@@ -88,14 +88,14 @@ class Video {
 
 	startPolling() {
 		if (this.player.paused) { return; }
-		if (this.timeout !== -1) { debug && console.log('startPolling ignoring duplicate start', this); return; }
-		debug && console.log('checkPadding start loop', this);
+		if (this.timeout !== -1) { debug && console.log('ignoring duplicate loop start', this); return; }
+		debug && console.log('start loop', this);
 		const loop = () => {
-			if (this.player.paused) { debug && console.log('checkPadding stop loop', this); this.timeout = -1; return; }
+			if (this.player.paused) { debug && console.log('stop loop', this); this.timeout = -1; return; }
 			// const start = performance.now();
 			this.updateZoom(true);
-			// console.log('checkPadding took', performance.now() - start);
-			debug && console.log('checkPadding loop wait', this.wait);
+			// console.log('updateZoom took', performance.now() - start);
+			debug && console.log('loop wait', this.wait);
 			this.timeout = setTimeout(loop, this.wait);
 		}; this.timeout = setTimeout(loop, this.wait = 300);
 	}
@@ -175,6 +175,9 @@ module.exports = {
 	resizeListener,
 	insertObserver,
 };
+
+debug && Object.assign(global, module.exports);
+debug >= 2 && typeof exportFunction === 'function' && exportFunction(eval, window, { defineAs: '$vp', }); /* globals exportFunction, */
 
 document.querySelectorAll('video').forEach(video => new Video(video));
 
