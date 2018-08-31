@@ -44,7 +44,7 @@ content.onUnload.addListener(onHide); function onHide(frame) {
 (await content.applyNow());
 
 Object.assign(global, { // for debugging
-	options, onClick, content,
+	options, onClick, content, notify,
 	Browser: require('node_modules/web-ext-utils/browser/'),
 	Loader:  require('node_modules/web-ext-utils/loader/'),
 	Utils:   require('node_modules/web-ext-utils/utils/'),

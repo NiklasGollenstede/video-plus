@@ -1,6 +1,6 @@
 {
 	"name": "video-plus",
-	"version": "0.1.3",
+	"version": "0.1.4",
 	"title": "Video Plus",
 	"description": "Browser extension that increases the display size of videos by removing unnecessary padding bars",
 	"author": "Niklas Gollenstede",
@@ -14,12 +14,12 @@
 		"multiport": "0.2.3",
 		"pbq": "0.3.3",
 		"web-ext-build": "0.0.9",
-		"web-ext-utils": "0.1.5"
+		"web-ext-utils": "0.1.6"
 	},
 	"devDependencies": {
-		"babel-eslint": "8.2.2",
-		"eslint": "4.19.1",
-		"eslintrc": "NiklasGollenstede/eslintrc#c7cbce2"
+		"babel-eslint": "9.0.0",
+		"eslint": "5.4.0",
+		"eslintrc": "NiklasGollenstede/eslintrc#8e5b58d"
 	},
 	"scripts": {
 		"postinstall": "npm start",

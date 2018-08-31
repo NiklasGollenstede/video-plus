@@ -1,4 +1,4 @@
-(function(global) { 'use strict'; define(({ module, }) => { // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+(function(global) { 'use strict'; define(() => { // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // test urls:
 // Varying height:   https://www.youtube.com/watch?v=sAsAVUqnvrY
