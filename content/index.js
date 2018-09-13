@@ -93,7 +93,7 @@ class Video {
 		const loop = () => {
 			if (this.player.paused) { debug && console.log('stop loop', this); this.timeout = -1; return; }
 			// const start = performance.now();
-			this.updateZoom(true);
+			try { this.updateZoom(true); } catch (error) { console.error(error); this.timeout = -1; return; }
 			// console.log('updateZoom took', performance.now() - start);
 			debug && console.log('loop wait', this.wait);
 			this.timeout = setTimeout(loop, this.wait);
@@ -114,7 +114,7 @@ class Video {
 
 		const last = (Date.now() - this.updated); if (
 			change > 0.005 // only update on significant changes
-			|| (last > 5000 && last > transitionDuration) // or if the transition had tome to change the size.
+			|| (last > 5000 && last > transitionDuration) // or if the transition had enough to change the size.
 		) { //  Otherwise lots of tiny changes after a larger change will keep restarting the transition, which is very slow in the beginning.
 			this.setZoom(pos, smooth);
 			debug && console.log('cropVideo', change, last > transitionDuration, padding, size, pos, this.wait);
@@ -166,7 +166,7 @@ const resizeListener = {
 const insertObserver = new MutationObserver(_=>_.forEach(_=>_.addedNodes.forEach(element => {
 	if (element.tagName === 'VIDEO') { new Video(element); }
 	else if (element.querySelectorAll) { element.querySelectorAll('video').forEach(video => new Video(video)); }
-}))); insertObserver.observe(document.body, { subtree: true, childList: true, });
+}))); insertObserver.observe(document.body || document, { subtree: true, childList: true, });
 onUnload.addListener(() => insertObserver.disconnect());
 
 module.exports = {

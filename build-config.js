@@ -1,5 +1,5 @@
 /*eslint strict: ["error", "global"], no-implicit-globals: "off"*/ 'use strict'; /* globals module, */ // license: MPL-2.0
-module.exports = function({ /*options, packageJson,*/ manifestJson, files, }) {
+module.exports = function({ options, /*packageJson,*/ manifestJson, files, }) {
 
 	manifestJson.permissions.push(
 		'notifications',
@@ -12,6 +12,8 @@ module.exports = function({ /*options, packageJson,*/ manifestJson, files, }) {
 		default_icon: manifestJson.icons,
 		default_title: `Toggle ${ manifestJson.name }`,
 	};
+
+	!options.viewRoot && (options.viewRoot = options.chrome ? 'VideoPlus.html' : 'VideoPlus');
 
 	files.node_modules = [
 		'es6lib/functional.js',
