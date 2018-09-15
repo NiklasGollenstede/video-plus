@@ -1,6 +1,6 @@
 (function(global) { 'use strict'; define(async ({ // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 	'node_modules/web-ext-utils/options/': Options,
-	'node_modules/web-ext-utils/browser/version': { firefox, },
+	'node_modules/web-ext-utils/browser/version': { firefox, gecko, },
 	'node_modules/web-ext-utils/browser/storage': { sync: storage, },
 }) => {
 
@@ -32,6 +32,12 @@ const model = {
 			message: `Each pattern must be of the form <scheme>://<host>/<path> or be framed with '^' and '$'`,
 		}, },
 		input: { type: 'string', default: 'https://*.youtube.com/*', },
+		children: {
+			incognito: {
+				default: !gecko, hidden: !gecko, // this is only relevant in Firefox, Chrome has a separate check box for this
+				input: { type: 'boolean', suffix: `include Private Browsing windows`, },
+			},
+		},
 	},
 	css: {
 		title: 'Style Fixes',

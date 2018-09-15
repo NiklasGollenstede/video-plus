@@ -16,6 +16,9 @@ const content = new ContentScript({
 options.include.whenChange(values => {
 	try { content.include = values; } catch (error) { notify.error(`Invalid URL pattern`, error); throw error; }
 });
+options.include.children.incognito.whenChange(([ value, ]) => {
+	content.incognito = value;
+});
 
 browserAction.onClicked.addListener(onClick);
 async function onClick() { try {

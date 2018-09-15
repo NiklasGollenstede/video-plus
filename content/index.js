@@ -22,7 +22,7 @@ const videoBG = `video { background-image:
 let debug; options.debug.whenChange(([ value, ]) => (debug = value));
 let transitionDuration; options.transitionDuration.whenChange(([ value, ]) => (transitionDuration = value));
 
-const styleFix = (document.head || document.documentElement).appendChild(document.createElement('style'));
+const styleFix = document.createElement('style');
 options.css.onAnyChange(updateCss); updateCss(); function updateCss() {
 	const values = options.css.values.current;
 	const at = values.findIndex(([ host, ]) => host === location.host);
@@ -44,6 +44,7 @@ onUnload.addListener(() => videos.forEach(_=>_.destroy()));
 
 class Video {
 	constructor(player) {
+		for (const video of videos) { if (video.player === player) { return video; } }
 		this.player = player;
 
 		// use an extra <style> element to style the video because the rules set there are less likely to be overwritten by the page (and should still apply with !important)
@@ -165,9 +166,7 @@ const resizeListener = {
 // handle every <video> that ever pops up
 const insertObserver = new MutationObserver(_=>_.forEach(_=>_.addedNodes.forEach(element => {
 	if (element.tagName === 'VIDEO') { new Video(element); }
-	else if (element.querySelectorAll) { element.querySelectorAll('video').forEach(video => new Video(video)); }
-}))); insertObserver.observe(document.body || document, { subtree: true, childList: true, });
-onUnload.addListener(() => insertObserver.disconnect());
+})));
 
 module.exports = {
 	Video,
@@ -176,9 +175,19 @@ module.exports = {
 	insertObserver,
 };
 
-debug && Object.assign(global, module.exports);
-debug >= 2 && typeof exportFunction === 'function' && exportFunction(eval, window, { defineAs: '$vp', }); /* globals exportFunction, */
+debug && Object.assign(global, module.exports); // useful in chrome, but rather pointless in firefox because the context can't be selected
+debug >= 2 && typeof exportFunction === 'function' && exportFunction(eval, window, { defineAs: '$vp', }); /* globals exportFunction, */ // but this works in firefox
 
-document.querySelectorAll('video').forEach(video => new Video(video));
+// there is no need to run early. This should also avoid situations where `document` or its children don't exist yet
+if (document.readyState !== 'interactive' && document.readyState !== 'complete') {
+	(await new Promise(loaded => document.addEventListener('DOMContentLoaded', loaded)));
+}
+
+document.head.appendChild(styleFix);
+
+insertObserver.observe(document.body, { subtree: true, childList: true, });
+onUnload.addListener(() => insertObserver.disconnect());
+
+Array.from(document.getElementsByTagName('video'), video => new Video(video));
 
 }); })(this);
