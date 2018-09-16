@@ -1,10 +1,9 @@
 (function(global) { 'use strict'; define(async ({ // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 	'node_modules/es6lib/observer': { RemoveObserver, },
-	'node_modules/es6lib/functional': { throttle, },
 	'node_modules/web-ext-utils/loader/content': { onUnload, },
 	'common/options': options,
 	'./zoom': { getPadding, calcZoom, },
-	module,
+	module, require,
 }) => { /* globals window, document, location, setTimeout, clearTimeout, MutationObserver, */
 /* eslint-disable no-console */
 
@@ -39,12 +38,14 @@ const defaultStyle = {
 	transitionTimingFunction: 'cubic-bezier(1.0, 0.0, 0.7, 0.7)',
 };
 
-const videos = new Set;
-onUnload.addListener(() => videos.forEach(_=>_.destroy()));
+const windowEvents = [ 'click', 'resize', 'wheel', 'webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', ];
+const playerEvents = [ 'playing', 'loadeddata', ];
 
-class Video {
+const videos = new Map/*<HTMLVirdeoElement,VideoResizer?>*/;
+onUnload.addListener(() => videos.forEach(_=>_&&_.destroy()));
+
+class VideoResizer {
 	constructor(player) {
-		for (const video of videos) { if (video.player === player) { return video; } }
 		this.player = player;
 
 		// use an extra <style> element to style the video because the rules set there are less likely to be overwritten by the page (and should still apply with !important)
@@ -60,19 +61,19 @@ class Video {
 		this.wait = 300; // last wait time between lopped `.updateZoom()` calls
 		this.timeout = -1; // setTimeout handle for the next automatic `.updateZoom()` call
 		this.updated = 0; // timestamp of the last transitioned zoom update (or zero)
+		this.updateSize = throttle(this.updateSize.bind(this), 500);
 
-		player.addEventListener('playing', this);
-		player.addEventListener('loadeddata', this);
-
-		!videos.size && resizeListener.attach();
-		videos.add(this);
+		playerEvents.forEach(type => player.addEventListener(type, this));
+		windowEvents.forEach(type => window.addEventListener(type, this));
 		RemoveObserver.on(player, this.destroy = this.destroy.bind(this));
+		videos.set(player, this);
 
 		this.edges = { top: null, right: null, bottom: null, left: null, };
 		if (player.readyState >= 2) {
-			this.updateZoom(false);
+			try { this.updateZoom(false); } catch (error) { console.error(error); }
 			this.startPolling();
 		}
+		debug && console.log('new VideoResizer', this);
 	}
 
 	handleEvent(event) {
@@ -84,6 +85,9 @@ class Video {
 				debug && console.log('discarding edges', this);
 				this.edges = { top: null, right: null, bottom: null, left: null, };
 			} break;
+			default: { // windowEvents
+				this.updateSize();
+			}
 		}
 	}
 
@@ -101,6 +105,15 @@ class Video {
 		}; this.timeout = setTimeout(loop, this.wait = 300);
 	}
 
+	updateSize() { // bound & throttled
+		const { player, size, } = this;
+		const { clientWidth, clientHeight, } = player;
+		if (size.width === clientWidth && size.height === clientHeight) { return; }
+		size.width = clientWidth; size.height = clientHeight;
+		debug && console.log('resized', this);
+		try { this.updateZoom(false); } catch (error) { console.error(error); }
+	}
+
 	updateZoom(smooth) {
 		const { size, player, edges, } = this;
 
@@ -113,10 +126,10 @@ class Video {
 		}, 0);
 		this.wait = change > 0.01 ? 300 : Math.min(Math.max(300, this.wait * (1.5 - 50 * change)), 2500);
 
-		const last = (Date.now() - this.updated); if (
+		const last = (Date.now() - this.updated); if (change > 0 && (
 			change > 0.005 // only update on significant changes
 			|| (last > 5000 && last > transitionDuration) // or if the transition had enough to change the size.
-		) { //  Otherwise lots of tiny changes after a larger change will keep restarting the transition, which is very slow in the beginning.
+		)) { //  Otherwise lots of tiny changes after a larger change will keep restarting the transition, which is very slow in the beginning.
 			this.setZoom(pos, smooth);
 			debug && console.log('cropVideo', change, last > transitionDuration, padding, size, pos, this.wait);
 		}
@@ -134,44 +147,31 @@ class Video {
 		'important');
 	}
 
-	destroy() {
-		const { player, sheet, } = this;
-		debug && console.log('video.destroy()', this);
-		player.removeEventListener('playing', this);
-		player.removeEventListener('loadeddata', this);
+	destroy() { // bound
+		const { player, sheet, } = this; if (!player) { return; }
+
+		sheet && sheet.remove();
 		(player.dataset.videoToolsId === this.videoToolsId) && delete player.dataset.videoToolsId;
-		sheet.remove();
 		clearTimeout(this.timeout);
 
-		videos.delete(this);
-		!videos.size && resizeListener.detach();
+		playerEvents.forEach(type => player.addEventListener(type, this));
+		windowEvents.forEach(type => window.addEventListener(type, this));
 		RemoveObserver.off(player, this.destroy);
+		videos.delete(player);
+
+		debug && console.log('VideoResizer#destroy()', this);
 	}
 }
 
-const resizeListener = {
-	events: [ 'click', 'resize', 'wheel', 'webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', ],
-	attach() { this.events.forEach(type => window.addEventListener(type, this)); debug && console.log('resizeListener attach'); },
-	detach() { this.events.forEach(type => window.removeEventListener(type, this)); debug && console.log('resizeListener detach'); },
-	handleEvent: throttle(() => videos.forEach(video => {
-		const { player, size, } = video;
-		const { clientWidth, clientHeight, } = player;
-		if (size.width === clientWidth && size.height === clientHeight) { return; }
-		size.width = clientWidth; size.height = clientHeight;
-		debug && console.log('resized', video);
-		video.updateZoom(false);
-	}), 200),
-};
 
 // handle every <video> that ever pops up
-const insertObserver = new MutationObserver(_=>_.forEach(_=>_.addedNodes.forEach(element => {
-	if (element.tagName === 'VIDEO') { new Video(element); }
-})));
+const insertObserver = new MutationObserver(() => !willCheck && (willCheck = setTimeout(() => {
+	willCheck = 0; addAll(); // this should be faster than actually parsing the mutation event
+}, 300))); let willCheck = 0;
 
 module.exports = {
-	Video,
+	VideoResizer,
 	videos,
-	resizeListener,
 	insertObserver,
 };
 
@@ -188,6 +188,26 @@ document.head.appendChild(styleFix);
 insertObserver.observe(document.body, { subtree: true, childList: true, });
 onUnload.addListener(() => insertObserver.disconnect());
 
-Array.from(document.getElementsByTagName('video'), video => new Video(video));
+addAll(); function addAll() {
+	const players = document.getElementsByTagName('video');
+	for (let i = 0, l = players.length; i < l; ++i) {
+		const player = players[i]; if (videos.has(player)) { continue; }
+		let video = null; try {
+			video = new VideoResizer(player);
+		} catch (error) { require.async('node_modules/web-ext-utils/browser/messages').then(_=>_.post('notify.error', 'Video not monitored', error)); }
+		videos.set(player, video); // don't try again if it fails
+	}
+}
+
+
+function throttle(callback, time) {
+	let pending = false, last = 0; return function() {
+		if (pending) { return; } pending = true;
+		const wait = last + time - Date.now();
+		setTimeout(() => {
+			last = Date.now(); pending = false; callback();
+		}, wait > 0 ? wait : 0); // mustn't be << 0 in chrome 53+
+	};
+}
 
 }); })(this);

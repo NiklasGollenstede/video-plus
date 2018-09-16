@@ -1,5 +1,6 @@
 (function(global) { 'use strict'; define(async ({ // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 	'node_modules/web-ext-utils/browser/': { browserAction, Tabs, manifest, },
+	'node_modules/web-ext-utils/browser/messages': messages,
 	'node_modules/web-ext-utils/loader/': { ContentScript, unloadFrame, },
 	'node_modules/web-ext-utils/utils/notify': notify,
 	'common/options': options,
@@ -7,6 +8,7 @@
 }) => {
 
 let debug; options.debug.whenChange(([ value, ]) => { debug = value; require('node_modules/web-ext-utils/loader/').debug = debug >= 2; });
+messages.addHandlers('notify.', Object.assign({ }, notify));
 
 const content = new ContentScript({
 	runAt: 'document_end', // it acts delayed anyway

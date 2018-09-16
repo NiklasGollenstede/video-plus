@@ -16,10 +16,11 @@ module.exports = function({ options, /*packageJson,*/ manifestJson, files, }) {
 	!options.viewRoot && (options.viewRoot = options.chrome ? 'VideoPlus.html' : 'VideoPlus');
 
 	files.node_modules = [
-		'es6lib/functional.js',
 		'es6lib/observer.js',
+		'multiport/index.js',
 		'pbq/require.js',
 		'web-ext-utils/browser/index.js',
+		'web-ext-utils/browser/messages.js',
 		'web-ext-utils/browser/storage.js',
 		'web-ext-utils/browser/version.js',
 		'web-ext-utils/loader/_background.html',

@@ -1,6 +1,6 @@
 {
 	"name": "video-plus",
-	"version": "0.1.5",
+	"version": "0.1.6",
 	"title": "Video Plus",
 	"description": "Browser extension that increases the display size of videos by removing unnecessary padding bars",
 	"author": "Niklas Gollenstede",
