@@ -7,6 +7,10 @@
 }) => { /* globals window, document, location, setTimeout, clearTimeout, MutationObserver, */
 /* eslint-disable no-console */
 
+/**
+ * This file queries and applies the zoom of all videos at appropriate times.
+ */
+
 const videoBG = `video { background-image:
 	repeating-linear-gradient(-45deg,
 		rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 2px,
@@ -39,7 +43,7 @@ const defaultStyle = {
 };
 
 const windowEvents = [ 'click', 'resize', 'wheel', 'webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', ];
-const playerEvents = [ 'playing', 'loadeddata', ];
+const playerEvents = [ 'playing', 'loadeddata', 'seeked', ];
 
 const videos = new Map/*<HTMLVirdeoElement,VideoResizer?>*/;
 onUnload.addListener(() => videos.forEach(_=>_&&_.destroy()));
@@ -57,10 +61,11 @@ class VideoResizer {
 		Object.keys(defaultStyle).forEach(key => style.setProperty(key.replace(/[A-Z]/g, c => '-'+ c.toLowerCase()), defaultStyle[key], 'important'));
 
 		this.size = { width: player.clientWidth, height: player.clientHeight, }; // available video area, updated by the resizeListener
-		this.zoom = { x: 0, y: 0, z: 0, }; // current zoom settings (from last call to `.updateZoom()`)
+		this.zoom = null; // { x: 0, y: 0, z: 0, }; // current zoom settings (from last call to `.updateZoom()`)
 		this.wait = 300; // last wait time between lopped `.updateZoom()` calls
 		this.timeout = -1; // setTimeout handle for the next automatic `.updateZoom()` call
 		this.updated = 0; // timestamp of the last transitioned zoom update (or zero)
+		this.edges = { top: null, right: null, bottom: null, left: null, }; // `edges` parameter to `getPadding`
 		this.updateSize = throttle(this.updateSize.bind(this), 500);
 
 		playerEvents.forEach(type => player.addEventListener(type, this));
@@ -68,35 +73,36 @@ class VideoResizer {
 		RemoveObserver.on(player, this.destroy = this.destroy.bind(this));
 		videos.set(player, this);
 
-		this.edges = { top: null, right: null, bottom: null, left: null, };
-		if (player.readyState >= 2) {
-			try { this.updateZoom(false); } catch (error) { console.error(error); }
-			this.startPolling();
-		}
 		debug && console.log('new VideoResizer', this);
+		if (this.playing) { this.handleEvent({ type: 'playing', }); }
 	}
 
-	handleEvent(event) {
-		switch (event.type) {
+	get playing() { const { player, } = this; return player && !player.paused && !player.ended && player.readyState > 2; }
+
+	handleEvent({ type, }) {
+		switch (type) {
 			case 'playing': {
+				this.updateSize(true);
 				this.startPolling();
 			} break;
 			case 'loadeddata': {
 				debug && console.log('discarding edges', this);
 				this.edges = { top: null, right: null, bottom: null, left: null, };
 			} break;
+			case 'seeked': {
+				this.zoom = null;
+			} break;
 			default: { // windowEvents
-				this.updateSize();
+				this.updateSize(false);
 			}
 		}
 	}
 
 	startPolling() {
-		if (this.player.paused) { return; }
 		if (this.timeout !== -1) { debug && console.log('ignoring duplicate loop start', this); return; }
 		debug && console.log('start loop', this);
 		const loop = () => {
-			if (this.player.paused) { debug && console.log('stop loop', this); this.timeout = -1; return; }
+			if (!this.playing) { debug && console.log('stop loop', this); this.timeout = -1; return; }
 			// const start = performance.now();
 			try { this.updateZoom(true); } catch (error) { console.error(error); this.timeout = -1; return; }
 			// console.log('updateZoom took', performance.now() - start);
@@ -105,13 +111,14 @@ class VideoResizer {
 		}; this.timeout = setTimeout(loop, this.wait = 300);
 	}
 
-	updateSize() { // bound & throttled
+	updateSize(force) { // bound & throttled
 		const { player, size, } = this;
 		const { clientWidth, clientHeight, } = player;
-		if (size.width === clientWidth && size.height === clientHeight) { return; }
+		if (!force && size.width === clientWidth && size.height === clientHeight) { return false; }
 		size.width = clientWidth; size.height = clientHeight;
 		debug && console.log('resized', this);
-		try { this.updateZoom(false); } catch (error) { console.error(error); }
+		try { this.updateZoom(false); return true; }
+		catch (error) { console.error(error); return false; }
 	}
 
 	updateZoom(smooth) {
@@ -120,6 +127,8 @@ class VideoResizer {
 		const padding = getPadding(player, edges);
 		const pos = calcZoom(padding, size);
 		if (!pos) { debug && console.log('bad padding, retry', padding); this.wait = 300; return; }
+
+		if (!this.zoom) { smooth = false; this.zoom = { x: 0, y: 0, z: 0, }; }
 
 		const change = !smooth ? 1 : [ 'x', 'y', 'z', ].reduce((change, dir) => {
 			return change + Math.abs(this.zoom[dir] - (this.zoom[dir] = pos[dir]));
@@ -154,8 +163,8 @@ class VideoResizer {
 		(player.dataset.videoToolsId === this.videoToolsId) && delete player.dataset.videoToolsId;
 		clearTimeout(this.timeout);
 
-		playerEvents.forEach(type => player.addEventListener(type, this));
-		windowEvents.forEach(type => window.addEventListener(type, this));
+		playerEvents.forEach(type => player.removeEventListener(type, this));
+		windowEvents.forEach(type => window.removeEventListener(type, this));
 		RemoveObserver.off(player, this.destroy);
 		videos.delete(player);
 

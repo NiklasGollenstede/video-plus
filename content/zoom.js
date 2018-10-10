@@ -21,6 +21,7 @@ let tol = 8; // the +- tolerance within which each RGB channel hast to stay to b
 const canvas = global.document.createElement('canvas'), ctx = canvas.getContext('2d');
 
 /**
+ * Computes the padding of a video at its current frame.
  * @param  {HTMLVideoElement}  video  Video element to read from.
  * @param  {object}            edges  Object holding the previous edge colors. Will be updated with the current colors.
  *                                    May start of as empty object and should be passed to all future readings of the same video track.
@@ -146,7 +147,7 @@ function getPadding(video, edges) {
  * If the video is first shifted by x/y parts and then scaled (up) by the factor z,
  * it is scaled exactly as large as possible and moved just as much as necessary
  * to have it cover the maximum of the available area without stretching or cropping anything that is not padding.
- * @param  {object}   video      True video outer dimensions and padding in canvas pixels: { width, height, top, left, bottom, right, }.
+ * @param  {object}   video      True video outer dimensions and padding in canvas pixels: { width, height, top, left, bottom, right, }. (Output of `getPadding`.)
  * @param  {object}   container  Dimensions { width, height, } of the container in CSS px.
  * @return {object?}             Relative translateX/Y and scale as { x, y, z, } or `null` if any of the dimensions in `video` are NaN.
  */

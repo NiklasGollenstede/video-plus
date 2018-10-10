@@ -1,7 +1,7 @@
 
 # Video Plus — more video space
 
-So you want to watch that wide screen video on the entire surface of your 21:9 screen? No such luck if the uploader of the video for some reason decided to add black padding bars, which are not noticed on 16:9 screens. On a wider screen, you are stuck with black bars on all 4 sides of the video. For example a 21:9 video padded to 16:9 on a 21:9 screen wastes mode than 40% of the screen on black bars — and this is very common for example for music videos on YouTube or older movies.
+So you want to watch that wide screen video on the entire surface of your 21:9 screen? No such luck if the uploader of the video for some reason decided to add black padding bars, which are not noticed on 16:9 screens. On a wider screen, you are stuck with black bars on all 4 sides of the video. For example a 21:9 video padded to 16:9 on a 21:9 "ultrawide" screen wastes mode than 40% of the screen on black bars — and this is very common for example for music videos on YouTube or older movies.
 
 This extension changes that. While a video is played, it keeps scanning it for padding bars and zooms the video to crop of the edges as far as it is possible without stretching it or pushing content out to the sides. All black bars are effectively removed.
 

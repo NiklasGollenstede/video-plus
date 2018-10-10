@@ -1,8 +1,8 @@
 {
 	"name": "video-plus",
-	"version": "0.1.6",
+	"version": "0.1.7",
 	"title": "Video Plus",
-	"description": "Browser extension that increases the display size of videos by removing unnecessary padding bars",
+	"description": "Increases the display size of HTML5 videos by removing unnecessary padding bars",
 	"author": "Niklas Gollenstede",
 	"license": "MPL-2.0",
 	"repository": {
@@ -10,10 +10,10 @@
 		"url": "https://github.com/NiklasGollenstede/video-plus"
 	},
 	"dependencies": {
-		"es6lib": "0.0.2",
+		"es6lib": "0.0.3",
 		"multiport": "0.2.3",
 		"pbq": "0.3.5",
-		"web-ext-build": "0.0.9",
+		"web-ext-build": "0.0.10",
 		"web-ext-utils": "0.1.8"
 	},
 	"devDependencies": {
