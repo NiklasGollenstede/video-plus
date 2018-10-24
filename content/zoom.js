@@ -70,6 +70,8 @@ function getPadding(video, edges) {
 
 	for (let i = 0; i < 4; ++i) { const sideName = sideNames[i], side = sides[sideName]; {
 
+		if (offset >= side.depth) { padding[sideName] = NaN; continue; } // not enough video to test ==> failure
+
 		// get the average, upper and lower color along the edge of the current side
 		const edge = side.edge().data, length = edge.length / 4;
 		let   cR = 0, cG = 0, cB = 0, cA = 0; // (will be) average color along the edge
@@ -210,10 +212,10 @@ function calcZoom(video, container) {
 }
 
 function setOptions(options) {
-	if ('probes' in options) { probes = options.probes; }
-	if ('offset' in options) { offset = options.offset; }
-	if ('depth' in options) { depth = options.depth; }
-	if ('tol' in options) { tol = options.tol; }
+	if (Array.isArray(options.probes) && options.probes.every(p => typeof p === 'number' && p >= 0 && p <= 1)) { probes = options.probes.slice(); }
+	if (typeof options.offset === 'number' && options.offset >= 0 && options.offset % 1 === 0) { offset = options.offset; }
+	if (typeof options.depth === 'number' && options.depth > 0 && options.depth > .5) { depth = options.depth; }
+	if (typeof options.tol === 'number' && options.tol >= 0 && options.tol <= 255 && options.tol % 1 === 0) { tol = options.tol; }
 }
 
 function approach(from, to, by) {
