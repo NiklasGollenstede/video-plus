@@ -8,7 +8,7 @@ const defaultStyle = {
 	'transition-timing-function': 'cubic-bezier(1.0, 0.0, 0.7, 0.7)', // starts very slow
 };
 
-const windowEvents = [ 'click', 'resize', 'wheel', 'webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', ];
+const windowEvents = [ 'click', 'resize', 'wheel', 'webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', 'visibilitychange', ];
 const playerEvents = [ 'playing', 'loadeddata', 'seeked', ];
 
 /**
@@ -20,31 +20,25 @@ const playerEvents = [ 'playing', 'loadeddata', 'seeked', ];
  */
 class VideoResizer {
 	/**
-	 * @param  {HTMLVideoElement}  player               Permanent value for `this.player`.
-	 * @param  {number}            .transitionDuration  Initial value for `this.transitionDuration`.
+	 * @param  {HTMLVideoElement}     player               Permanent value for `this.player`.
+	 * @param  {number}               .transitionDuration  Initial value for `this.transitionDuration`.
+	 * @param  {CSSStyleDeclaration}  .style               Style node to apply the transformations to.
 	 */
-	constructor(player, { transitionDuration, }) {
-		this.player = player;
+	constructor(player, { transitionDuration = 5000, style = player.style, } = { }) {
+		this.player = player; this.transitionDuration = transitionDuration; this.style = style;
 
-		// use an extra <style> element to style the video because the rules set there are less likely to be overwritten by the page (and should still apply with !important)
-		const sheet = this.sheet = player.appendChild(document.createElement('style'));
-		this.videoToolsId = player.dataset.videoToolsId = Math.random().toString(32).slice(2);
-		sheet.textContent = `video[data-video-tools-id="${this.videoToolsId}"] { }`;
-
-		const style = this.style = /*player.style; //*/ sheet.sheet.cssRules[0].style;
-		Object.keys(defaultStyle).forEach(key => style.setProperty(key, defaultStyle[key], 'important'));
-
+		// initial state
 		this.size = { width: player.clientWidth, height: player.clientHeight, }; // available video area, updated by the resizeListener
 		this.zoom = null; // { x: 0, y: 0, z: 0, }; // current zoom settings (from last call to `.updateZoom()`)
 		this.wait = 300; // last wait time between lopped `.updateZoom()` calls
 		this.timeout = -1; // setTimeout handle for the next automatic `.updateZoom()` call
 		this.updated = 0; // timestamp of the last transitioned zoom update (or zero)
 		this.edges = { top: null, right: null, bottom: null, left: null, }; // `edges` parameter to `getPadding`
-		this.transitionDuration = transitionDuration;
-		this.updateSize = throttle(this.updateSize.bind(this), 500);
 
+		this.updateSize = throttle(this.updateSize.bind(this), 500);
 		playerEvents.forEach(type => player.addEventListener(type, this));
 		windowEvents.forEach(type => window.addEventListener(type, this));
+		Object.keys(defaultStyle).forEach(key => style.setProperty(key, defaultStyle[key], 'important'));
 
 		debug && console.log('new VideoResizer', this);
 		if (this.playing) { this.handleEvent({ type: 'playing', }); }
@@ -56,8 +50,9 @@ class VideoResizer {
 	// EventHandler interface method. `event.target` will be either `.player` or `window`.
 	handleEvent({ type, }) {
 		switch (type) {
+			case 'visibilitychange': if (!this.playing || document.visibilityState !== 'visible') { break; } // falls through
 			case 'playing': {
-				this.updateSize(true);
+				try { this.updateZoom(false); } catch (error) { console.error(error); }
 				this.startPolling();
 			} break;
 			case 'loadeddata': {
@@ -65,10 +60,10 @@ class VideoResizer {
 				this.edges = { top: null, right: null, bottom: null, left: null, };
 			} break;
 			case 'seeked': {
-				this.updateSize(true);
+				try { this.updateZoom(false); } catch (error) { console.error(error); }
 			} break;
 			default: { // windowEvents
-				this.updateSize(false);
+				this.updateSize();
 			}
 		}
 	}
@@ -78,7 +73,7 @@ class VideoResizer {
 		if (this.timeout !== -1) { debug && console.log('ignoring duplicate loop start', this); return; }
 		debug && console.log('start loop', this);
 		const loop = () => {
-			if (!this.playing) { debug && console.log('stop loop', this); this.timeout = -1; return; }
+			if (!this.playing || document.visibilityState !== 'visible') { debug && console.log('stop loop', this); this.timeout = -1; return; }
 			// const start = performance.now();
 			try { this.updateZoom(true); } catch (error) { console.error(error); this.timeout = -1; return; }
 			// console.log('updateZoom took', performance.now() - start);
@@ -87,14 +82,13 @@ class VideoResizer {
 		}; this.timeout = setTimeout(loop, this.wait = 300);
 	}
 
-	updateSize(force) { // bound & throttled
+	updateSize() { // bound & throttled (thus w/o args or return value)
 		const { player, size, } = this;
 		const { clientWidth, clientHeight, } = player;
-		if (!force && size.width === clientWidth && size.height === clientHeight) { return false; }
+		if (size.width === clientWidth && size.height === clientHeight) { return; }
 		size.width = clientWidth; size.height = clientHeight;
 		debug && console.log('resized', this);
-		try { this.updateZoom(false); return true; }
-		catch (error) { console.error(error); return false; }
+		try { this.updateZoom(false); } catch (error) { console.error(error); }
 	}
 
 	updateZoom(smooth) {
@@ -109,7 +103,8 @@ class VideoResizer {
 		const change = !smooth ? 1 : [ 'x', 'y', 'z', ].reduce((change, dir) => {
 			return change + Math.abs(this.zoom[dir] - (this.zoom[dir] = pos[dir]));
 		}, 0);
-		this.wait = change > 0.01 ? 300 : Math.min(Math.max(300, this.wait * (1.5 - 50 * change)), 2500);
+		this.wait = isNaN(change) // TODO: find out how this can be NaN (hidden video?)
+		|| change > 0.01 ? 300 : Math.min(Math.max(300, this.wait * (1.5 - 50 * change)), 2500);
 
 		const last = (Date.now() - this.updated); if (change > 0 && (
 			change > 0.005 // only update on significant changes
@@ -133,14 +128,15 @@ class VideoResizer {
 	}
 
 	destroy() {
-		const { player, sheet, } = this; if (!player) { return; }
-
-		sheet && sheet.remove();
-		(player.dataset.videoToolsId === this.videoToolsId) && delete player.dataset.videoToolsId;
-		clearTimeout(this.timeout);
+		const { player, } = this; if (!player) { return; }
 
 		playerEvents.forEach(type => player.removeEventListener(type, this));
 		windowEvents.forEach(type => window.removeEventListener(type, this));
+		clearTimeout(this.timeout);
+
+		this.player = this.transitionDuration = this.style = null;
+		this.size = this.zoom = this.edges = null;
+		this.wait = this.timeout = this.updated = 0;
 
 		debug && console.log('VideoResizer#destroy()', this);
 	}

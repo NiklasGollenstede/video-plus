@@ -1,17 +1,13 @@
 (function(global) { 'use strict'; define(async ({ // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 	'node_modules/web-ext-utils/browser/': { manifest, },
 	'node_modules/web-ext-utils/options/': Options,
-	'node_modules/web-ext-utils/browser/version': { firefox, gecko, },
+	'node_modules/web-ext-utils/browser/version': { gecko, },
 	'node_modules/web-ext-utils/browser/storage': { sync: storage, },
 }) => {
 
 const isBeta = manifest.applications.gecko.id.endsWith('-dev');
 
 const model = {
-	description: {
-		hidden: firefox,
-		description: `Increases the display size of videos by removing unnecessary padding bars. <a href="https://github.com/NiklasGollenstede/video-plus#readme" target="_blank">More information</a>`,
-	},
 	include: {
 		title: 'Included Sites',
 		description: String.raw`

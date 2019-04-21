@@ -38,10 +38,12 @@ options.css.onAnyChange(updateCss); updateCss(); function updateCss() {
 }
 onUnload.addListener(() => styleFix.remove());
 
-// handle every <video> that ever pops up
-const insertObserver = new MutationObserver(() => !willCheck && (willCheck = setTimeout(() => {
-	willCheck = 0; addAll(); // this should be faster than actually parsing the mutation event
-}, 300))); let willCheck = 0;
+// While nodes are being added or removed from the DOM, run `addAll()` every 300ms.
+// This should be faster than actually interpreting the mutation events,
+// under the assumptions that there are only a few videos in the page and that is ok to wait a bit before handling them.
+const insertObserver = new MutationObserver(() => {
+	!willCheck && (willCheck = setTimeout(() => { willCheck = 0; addAll(); }, 300));
+}); let willCheck = 0;
 
 module.exports = { // export before things can go wrong ...
 	VideoResizer,
@@ -61,16 +63,24 @@ document.head.appendChild(styleFix);
 insertObserver.observe(document.body, { subtree: true, childList: true, });
 onUnload.addListener(() => insertObserver.disconnect());
 
+// Checks if there are any new `<video>`s in the DOM and creates `VideoResizer` instances for them.
 addAll(); function addAll() {
 	const players = document.getElementsByTagName('video');
 	for (let i = 0, l = players.length; i < l; ++i) { const player = players[i]; {
 		if (videos.has(player)) { continue; }
 		let video = null; try {
-			video = new VideoResizer(player, { transitionDuration, });
+
+			// use an extra <style> element to style the video because the rules set there are less likely to be overwritten by the page (and should still apply with !important)
+			const sheet = player.appendChild(document.createElement('style'));
+			const videoToolsId = player.dataset.videoToolsId = Math.random().toString(32).slice(2);
+			sheet.textContent = `video[data-video-tools-id="${videoToolsId}"] { }`;
+			const style = sheet.sheet.cssRules[0].style;
+
+			video = new VideoResizer(player, { transitionDuration, style, });
 			RemoveObserver.on(player, video._destroy = () => {
-				video.destroy();
-				RemoveObserver.off(player, video._destroy);
-				videos.delete(player);
+				sheet.remove(); (player.dataset.videoToolsId === videoToolsId) && delete player.dataset.videoToolsId;
+				video.destroy(); videos.delete(player);
+				RemoveObserver.off(player, video._destroy); delete video._destroy;
 			});
 		} catch (error) { require.async('node_modules/web-ext-utils/browser/messages').then(_=>_.post('notify.error', 'Video not monitored', error)); }
 		videos.set(player, video); // don't try again even if it fails
